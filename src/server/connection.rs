@@ -3198,6 +3198,18 @@ impl Connection {
                     #[cfg(any(target_os = "android", target_os = "ios"))]
                     log::warn!("Terminal action received but not supported on this platform");
                 }
+                Some(message::Union::PassThroughRequest(request)) => {
+                    log::info!("Received pass-through request: type={:?}, enable={}", request.type_(), request.enable);
+                    self.handle_passthrough_request(request).await;
+                }
+                Some(message::Union::ClientAudioFrame(frame)) => {
+                    log::debug!("Received client audio frame: {} bytes", frame.data.len());
+                    self.handle_client_audio_frame(frame).await;
+                }
+                Some(message::Union::ClientVideoFrame(frame)) => {
+                    log::debug!("Received client video frame: {}x{}, {} bytes", frame.width, frame.height, frame.data.len());
+                    self.handle_client_video_frame(frame).await;
+                }
                 _ => {}
             }
         }
@@ -4704,6 +4716,59 @@ impl Connection {
         }
 
         Ok(())
+    }
+
+    // Handle pass-through request from client
+    async fn handle_passthrough_request(&mut self, request: PassThroughRequest) {
+        let mut response = PassThroughResponse::new();
+        response.set_type(request.type_());
+        
+        match request.type_() {
+            pass_through_request::Type::Audio => {
+                if request.enable {
+                    log::info!("Enabling audio pass-through");
+                    // TODO: Create virtual audio device and start routing audio
+                    // For now, just acknowledge the request
+                    response.set_success(true);
+                } else {
+                    log::info!("Disabling audio pass-through");
+                    // TODO: Stop routing audio and remove virtual device
+                    response.set_success(true);
+                }
+            }
+            pass_through_request::Type::Video => {
+                if request.enable {
+                    log::info!("Enabling video pass-through");
+                    // TODO: Create virtual video device and start routing video
+                    // For now, just acknowledge the request
+                    response.set_success(true);
+                } else {
+                    log::info!("Disabling video pass-through");
+                    // TODO: Stop routing video and remove virtual device
+                    response.set_success(true);
+                }
+            }
+        }
+        
+        let mut msg_out = Message::new();
+        msg_out.set_pass_through_response(response);
+        self.send(msg_out).await;
+    }
+
+    // Handle audio frame from client
+    async fn handle_client_audio_frame(&mut self, _frame: ClientAudioFrame) {
+        // TODO: Route audio data to virtual audio device
+        // This would write the audio data to a virtual audio sink/device
+        // so that applications on the controlled computer can use it
+        log::debug!("Received client audio frame - routing to virtual device (not yet implemented)");
+    }
+
+    // Handle video frame from client
+    async fn handle_client_video_frame(&mut self, _frame: ClientVideoFrame) {
+        // TODO: Route video data to virtual video device
+        // This would write the video data to a virtual webcam device
+        // so that applications on the controlled computer can use it
+        log::debug!("Received client video frame - routing to virtual device (not yet implemented)");
     }
 }
 
