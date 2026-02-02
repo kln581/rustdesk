@@ -1,5 +1,51 @@
 // Media pass-through service for forwarding local webcam/microphone to remote computer
 // This allows the controller computer to share its media devices with the controlled computer
+//
+// ## Integration Example
+//
+// To integrate this into the client connection, add a field to the Remote struct in io_loop.rs:
+//
+// ```rust
+// pub struct Remote<T: InvokeUiSession> {
+//     handler: Session<T>,
+//     audio_sender: MediaSender,
+//     receiver: mpsc::UnboundedReceiver<Data>,
+//     sender: mpsc::UnboundedSender<Data>,
+//     // ... other fields ...
+//     media_passthrough: Option<MediaPassThroughManager>,  // Add this field
+// }
+// ```
+//
+// Then initialize it in the `new` method:
+//
+// ```rust
+// Self {
+//     // ... other fields ...
+//     media_passthrough: None,
+// }
+// ```
+//
+// Add methods to the Remote impl to control pass-through:
+//
+// ```rust
+// pub fn enable_audio_passthrough(&mut self, device: Option<String>) {
+//     if self.media_passthrough.is_none() {
+//         self.media_passthrough = Some(MediaPassThroughManager::new(self.sender.clone()));
+//     }
+//     if let Some(manager) = &mut self.media_passthrough {
+//         manager.start_audio_capture(device);
+//     }
+// }
+//
+// pub fn enable_video_passthrough(&mut self, device: Option<String>) {
+//     if self.media_passthrough.is_none() {
+//         self.media_passthrough = Some(MediaPassThroughManager::new(self.sender.clone()));
+//     }
+//     if let Some(manager) = &mut self.media_passthrough {
+//         manager.start_video_capture(device);
+//     }
+// }
+// ```
 
 use hbb_common::{
     log,
